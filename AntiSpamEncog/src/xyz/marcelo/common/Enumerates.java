@@ -15,7 +15,6 @@ public class Enumerates
      */
     public static enum MessageLabel
     {
-
         /** Represents a ham. */
         HAM(new Double[] { 1.0, 0.0 }),
 
@@ -27,7 +26,7 @@ public class Enumerates
 
         /**
          * Instantiates a new message label.
-         * 
+         *
          * @param value
          *            the value
          */
@@ -38,7 +37,7 @@ public class Enumerates
 
         /**
          * Gets the value.
-         * 
+         *
          * @return the value
          */
         public Double[] getValue()
@@ -52,7 +51,6 @@ public class Enumerates
      */
     public static enum Method
     {
-
         /** The mlp bprop. */
         MLP_BPROP("Multilayer Perceptron (Backpropagation)"),
 
@@ -73,7 +71,7 @@ public class Enumerates
 
         /**
          * Instantiates a new method.
-         * 
+         *
          * @param name
          *            the name
          */
@@ -84,7 +82,7 @@ public class Enumerates
 
         /**
          * Gets the name.
-         * 
+         *
          * @return the name
          */
         public String getName()
@@ -92,5 +90,4 @@ public class Enumerates
             return name;
         }
     }
-
 }

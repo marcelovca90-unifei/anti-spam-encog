@@ -18,305 +18,295 @@ import xyz.marcelo.ml.MethodUtil;
 
 /**
  * @author marcelovca90
- * 
+ *
  */
 public class MessageDataSet
 {
-	private List<Double[]> inputData;
+    private List<Double[]> inputData;
 
-	private List<Double[]> outputData;
+    private List<Double[]> outputData;
 
-	private String hamFilePath;
+    private String hamFilePath;
 
-	private String spamFilePath;
+    private String spamFilePath;
 
-	private int hamCount;
+    private int hamCount;
 
-	private int spamCount;
+    private int spamCount;
 
-	public MessageDataSet(File hamFile, File spamFile)
-	{
+    public MessageDataSet(File hamFile, File spamFile)
+    {
+        this.inputData = new ArrayList<>();
+        this.outputData = new ArrayList<>();
 
-		this.inputData = new ArrayList<Double[]>();
-		this.outputData = new ArrayList<Double[]>();
+        this.hamFilePath = hamFile.getPath().substring(hamFile.getPath().indexOf("Vectors") + "Vectors".length());
+        this.spamFilePath = spamFile.getPath().substring(hamFile.getPath().indexOf("Vectors") + "Vectors".length());
 
-		this.hamFilePath = hamFile.getPath().substring(hamFile.getPath().indexOf("Vectors") + "Vectors".length());
-		this.spamFilePath = spamFile.getPath().substring(hamFile.getPath().indexOf("Vectors") + "Vectors".length());
+        this.addMessagesFromFile(hamFile);
+        this.addMessagesFromFile(spamFile);
+    }
 
-		this.addMessagesFromFile(hamFile);
-		this.addMessagesFromFile(spamFile);
-	}
+    private MessageDataSet(List<Double[]> inputData, List<Double[]> outputData, String hamFilePath, String spamFilePath, int hamCount, int spamCount)
+    {
+        this.inputData = inputData;
+        this.outputData = outputData;
+        this.hamFilePath = hamFilePath;
+        this.spamFilePath = spamFilePath;
+        this.hamCount = hamCount;
+        this.spamCount = spamCount;
+    }
 
-	private MessageDataSet(List<Double[]> inputData, List<Double[]> outputData, String hamFilePath, String spamFilePath,
-			int hamCount, int spamCount)
-	{
+    private void addMessagesFromFile(File file)
+    {
+        try
+        {
+            if (!file.getName().contains("ham") && !file.getName().contains("spam")) throw new IOException("File name must contain 'ham' or 'spam'.");
+        }
+        catch (IOException e1)
+        {
+            e1.printStackTrace();
+        }
 
-		this.inputData = inputData;
-		this.outputData = outputData;
-		this.hamFilePath = hamFilePath;
-		this.spamFilePath = spamFilePath;
-		this.hamCount = hamCount;
-		this.spamCount = spamCount;
-	}
+        // open file
+        FileInputStream stream = null;
+        try
+        {
+            stream = new FileInputStream(file);
+        }
+        catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        }
+        FileChannel fileIn = stream.getChannel();
 
-	private void addMessagesFromFile(File file)
-	{
+        // load input
+        int bufferLen = (int) file.length();
 
-		try
-		{
-			if (!file.getName().contains("ham") && !file.getName().contains("spam"))
-				throw new IOException("File name must contain 'ham' or 'spam'.");
-		} catch (IOException e1)
-		{
-			e1.printStackTrace();
-		}
+        ByteBuffer inBuffer = ByteBuffer.allocate(bufferLen);
 
-		// open file
-		FileInputStream stream = null;
-		try
-		{
-			stream = new FileInputStream(file);
-		} catch (FileNotFoundException e)
-		{
-			e.printStackTrace();
-		}
-		FileChannel fileIn = stream.getChannel();
+        try
+        {
+            int readAmount = fileIn.read(inBuffer);
+            if (readAmount != bufferLen) throw new IOException();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                fileIn.close();
+                stream.close();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+            inBuffer.flip(); // reset pointer
+        }
 
-		// load input
-		int bufferLen = (int) file.length();
+        int instanceAmount = inBuffer.getInt(); // amount of instances
+        int featureAmount = inBuffer.getInt(); // amount of features in each
+        // instance
 
-		ByteBuffer inBuffer = ByteBuffer.allocate(bufferLen);
+        for (int i = 0; i < instanceAmount; i++)
+        {
+            Double[] tempInputData = new Double[featureAmount];
 
-		try
-		{
-			int readAmount = fileIn.read(inBuffer);
-			if (readAmount != bufferLen)
-				throw new IOException();
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-		} finally
-		{
-			try
-			{
-				fileIn.close();
-				stream.close();
-			} catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-			inBuffer.flip(); // reset pointer
-		}
+            for (int j = 0; j < featureAmount; j++)
+                tempInputData[j] = inBuffer.getDouble();
 
-		int instanceAmount = inBuffer.getInt(); // amount of instances
-		int featureAmount = inBuffer.getInt(); // amount of features in each
-		// instance
+            this.inputData.add(tempInputData);
 
-		for (int i = 0; i < instanceAmount; i++)
-		{
+            MessageLabel tempOutputLabel = file.getName().contains("ham") ? MessageLabel.HAM : MessageLabel.SPAM;
 
-			Double[] tempInputData = new Double[featureAmount];
+            switch (tempOutputLabel)
+            {
+                case HAM:
+                    this.hamCount++;
+                    break;
+                case SPAM:
+                    this.spamCount++;
+                    break;
+            }
 
-			for (int j = 0; j < featureAmount; j++)
-				tempInputData[j] = inBuffer.getDouble();
+            Double[] tempOutputData = tempOutputLabel.getValue();
 
-			this.inputData.add(tempInputData);
+            this.outputData.add(tempOutputData);
+        }
+    }
 
-			MessageLabel tempOutputLabel = file.getName().contains("ham") ? MessageLabel.HAM : MessageLabel.SPAM;
+    public int getHamCount()
+    {
+        return hamCount;
+    }
 
-			switch (tempOutputLabel)
-			{
-			case HAM:
-				this.hamCount++;
-				break;
-			case SPAM:
-				this.spamCount++;
-				break;
-			}
+    public String getHamFilePath()
+    {
+        return hamFilePath;
+    }
 
-			Double[] tempOutputData = tempOutputLabel.getValue();
+    public List<Double[]> getInputData()
+    {
+        return inputData;
+    }
 
-			this.outputData.add(tempOutputData);
-		}
-	}
+    public double[][] getInputDataAsPrimitiveMatrix()
+    {
+        double[][] matrix = new double[inputData.size()][];
+        for (int i = 0; i < matrix.length; i++)
+            matrix[i] = ArrayUtils.toPrimitive(inputData.get(i));
+        return matrix;
+    }
 
-	public int getHamCount()
-	{
-		return hamCount;
-	}
+    public List<Double[]> getOutputData()
+    {
+        return outputData;
+    }
 
-	public String getHamFilePath()
-	{
-		return hamFilePath;
-	}
+    public double[][] getOutputDataAsPrimitiveMatrix()
+    {
 
-	public List<Double[]> getInputData()
-	{
-		return inputData;
-	}
+        double[][] matrix = new double[outputData.size()][];
+        for (int i = 0; i < matrix.length; i++)
+            matrix[i] = ArrayUtils.toPrimitive(outputData.get(i));
+        return matrix;
+    }
 
-	public double[][] getInputDataAsPrimitiveMatrix()
-	{
-		double[][] matrix = new double[inputData.size()][];
-		for (int i = 0; i < matrix.length; i++)
-			matrix[i] = ArrayUtils.toPrimitive(inputData.get(i));
-		return matrix;
-	}
+    public int getSpamCount()
+    {
+        return spamCount;
+    }
 
-	public List<Double[]> getOutputData()
-	{
-		return outputData;
-	}
+    public String getSpamFilePath()
+    {
+        return spamFilePath;
+    }
 
-	public double[][] getOutputDataAsPrimitiveMatrix()
-	{
+    public MessageDataSet getSubset(int startPercentage, int endPercentage)
+    {
+        double startPercentageDouble = (startPercentage / 100.0);
+        double endPercentageDouble = (endPercentage / 100.0);
 
-		double[][] matrix = new double[outputData.size()][];
-		for (int i = 0; i < matrix.length; i++)
-			matrix[i] = ArrayUtils.toPrimitive(outputData.get(i));
-		return matrix;
-	}
+        int inputStartIndex = (int) (this.inputData.size() * startPercentageDouble);
+        int inputEndIndex = (int) (this.inputData.size() * endPercentageDouble);
+        List<Double[]> newInputData = this.inputData.subList(inputStartIndex, inputEndIndex);
 
-	public int getSpamCount()
-	{
-		return spamCount;
-	}
+        int outputStartIndex = (int) (this.outputData.size() * startPercentageDouble);
+        int outputEndIndex = (int) (this.outputData.size() * endPercentageDouble);
+        List<Double[]> newOutputData = this.outputData.subList(outputStartIndex, outputEndIndex);
 
-	public String getSpamFilePath()
-	{
-		return spamFilePath;
-	}
+        String newHamFilePath = String.format("%s[%d,%d]", hamFilePath, startPercentage, endPercentage);
+        String newSpamFilePath = String.format("%s[%d,%d]", spamFilePath, startPercentage, endPercentage);
 
-	public MessageDataSet getSubset(int startPercentage, int endPercentage)
-	{
+        int newHamCount = 0;
+        int newSpamCount = 0;
 
-		double startPercentageDouble = ((double) startPercentage / 100.0);
-		double endPercentageDouble = ((double) endPercentage / 100.0);
+        for (Double[] output : newOutputData)
+        {
+            switch (MethodUtil.infer(output))
+            {
+                case HAM:
+                    newHamCount++;
+                    break;
+                case SPAM:
+                    newSpamCount++;
+                    break;
+            }
+        }
 
-		int inputStartIndex = (int) ((double) this.inputData.size() * startPercentageDouble);
-		int inputEndIndex = (int) ((double) this.inputData.size() * endPercentageDouble);
-		List<Double[]> newInputData = this.inputData.subList(inputStartIndex, inputEndIndex);
+        return new MessageDataSet(newInputData, newOutputData, newHamFilePath, newSpamFilePath, newHamCount, newSpamCount);
+    }
 
-		int outputStartIndex = (int) ((double) this.outputData.size() * startPercentageDouble);
-		int outputEndIndex = (int) ((double) this.outputData.size() * endPercentageDouble);
-		List<Double[]> newOutputData = this.outputData.subList(outputStartIndex, outputEndIndex);
+    public void insertEmptyPatterns(String folder)
+    {
+        int numberOfFeatures = this.inputData.get(0).length;
 
-		String newHamFilePath = String.format("%s[%d,%d]", hamFilePath, startPercentage, endPercentage);
-		String newSpamFilePath = String.format("%s[%d,%d]", spamFilePath, startPercentage, endPercentage);
+        final Double[] emptyInputPattern = new Double[numberOfFeatures];
+        emptyInputPattern[0] = 1.0;
+        for (int i = 1; i < numberOfFeatures; i++)
+            emptyInputPattern[i] = 0.0;
+        final Double[] emptyOutputHamPattern = new Double[] { 1.0, 0.0 };
+        final Double[] emptyOutputSpamPattern = new Double[] { 0.0, 1.0 };
 
-		int newHamCount = 0;
-		int newSpamCount = 0;
+        int[] emptyPatternsCount = EmptyPatterns.get(folder);
 
-		for (Double[] output : newOutputData)
-		{
-			switch (MethodUtil.infer(output))
-			{
-			case HAM:
-				newHamCount++;
-				break;
-			case SPAM:
-				newSpamCount++;
-				break;
-			}
-		}
+        int emptyHamsCount = emptyPatternsCount[0];
+        for (int i = 0; i < emptyHamsCount; i++)
+        {
+            this.inputData.add(emptyInputPattern.clone());
+            this.outputData.add(emptyOutputHamPattern.clone());
+        }
+        this.hamCount += emptyHamsCount;
 
-		return new MessageDataSet(newInputData, newOutputData, newHamFilePath, newSpamFilePath, newHamCount,
-				newSpamCount);
-	}
+        int emptySpamsCount = emptyPatternsCount[1];
+        for (int i = 0; i < emptySpamsCount; i++)
+        {
+            this.inputData.add(emptyInputPattern.clone());
+            this.outputData.add(emptyOutputSpamPattern.clone());
+        }
+        this.spamCount += emptySpamsCount;
+    }
 
-	public void insertEmptyPatterns(String folder)
-	{
+    public void replicate(int seed)
+    {
+        List<Double[]> newInputData = new ArrayList<>();
+        List<Double[]> newOutputData = new ArrayList<>();
+        Random random = new Random(seed);
 
-		int numberOfFeatures = this.inputData.get(0).length;
+        if (this.hamCount < this.spamCount)
+        {
+            int hamsToBeAdded = (this.spamCount - this.hamCount);
+            for (int i = 0; i < hamsToBeAdded; i++)
+            {
+                int randomIndex = random.nextInt(this.hamCount);
+                newInputData.add(this.inputData.get(randomIndex));
+                newOutputData.add(this.outputData.get(randomIndex));
+            }
+            this.hamCount += hamsToBeAdded;
+        }
+        else
+        {
+            int spamsToBeAdded = (this.hamCount - this.spamCount);
+            for (int i = 0; i < spamsToBeAdded; i++)
+            {
+                int randomIndex = this.hamCount + random.nextInt(this.spamCount);
+                newInputData.add(this.inputData.get(randomIndex));
+                newOutputData.add(this.outputData.get(randomIndex));
+            }
+            this.spamCount += spamsToBeAdded;
+        }
 
-		final Double[] emptyInputPattern = new Double[numberOfFeatures];
-		emptyInputPattern[0] = 1.0;
-		for (int i = 1; i < numberOfFeatures; i++)
-			emptyInputPattern[i] = 0.0;
-		final Double[] emptyOutputHamPattern = new Double[] { 1.0, 0.0 };
-		final Double[] emptyOutputSpamPattern = new Double[] { 0.0, 1.0 };
+        this.inputData.addAll(newInputData);
+        this.outputData.addAll(newOutputData);
+    }
 
-		int[] emptyPatternsCount = EmptyPatterns.get(folder);
+    public void shuffle(long seed)
+    {
+        if (this.inputData.size() != this.outputData.size()) throw new ArithmeticException("Input and output arrays must have the same size.");
 
-		int emptyHamsCount = emptyPatternsCount[0];
-		for (int i = 0; i < emptyHamsCount; i++)
-		{
-			this.inputData.add(emptyInputPattern.clone());
-			this.outputData.add(emptyOutputHamPattern.clone());
-		}
-		this.hamCount += emptyHamsCount;
+        Random random = new Random(seed);
+        Double[] backup;
 
-		int emptySpamsCount = emptyPatternsCount[1];
-		for (int i = 0; i < emptySpamsCount; i++)
-		{
-			this.inputData.add(emptyInputPattern.clone());
-			this.outputData.add(emptyOutputSpamPattern.clone());
-		}
-		this.spamCount += emptySpamsCount;
-	}
+        for (int i = this.inputData.size() - 1; i > 0; i--)
+        {
+            int index = random.nextInt(i + 1);
 
-	public void replicate(int seed)
-	{
+            backup = this.inputData.get(index);
+            this.inputData.set(index, this.inputData.get(i));
+            this.inputData.set(i, backup);
 
-		List<Double[]> newInputData = new ArrayList<Double[]>();
-		List<Double[]> newOutputData = new ArrayList<Double[]>();
-		Random random = new Random(seed);
+            backup = this.outputData.get(index);
+            this.outputData.set(index, this.outputData.get(i));
+            this.outputData.set(i, backup);
+        }
+    }
 
-		if (this.hamCount < this.spamCount)
-		{
-			int hamsToBeAdded = (this.spamCount - this.hamCount);
-			for (int i = 0; i < hamsToBeAdded; i++)
-			{
-				int randomIndex = random.nextInt(this.hamCount);
-				newInputData.add(this.inputData.get(randomIndex));
-				newOutputData.add(this.outputData.get(randomIndex));
-			}
-			this.hamCount += hamsToBeAdded;
-		} else
-		{
-			int spamsToBeAdded = (this.hamCount - this.spamCount);
-			for (int i = 0; i < spamsToBeAdded; i++)
-			{
-				int randomIndex = this.hamCount + random.nextInt(this.spamCount);
-				newInputData.add(this.inputData.get(randomIndex));
-				newOutputData.add(this.outputData.get(randomIndex));
-			}
-			this.spamCount += spamsToBeAdded;
-		}
-
-		this.inputData.addAll(newInputData);
-		this.outputData.addAll(newOutputData);
-	}
-
-	public void shuffle(long seed)
-	{
-
-		if (this.inputData.size() != this.outputData.size())
-			throw new ArithmeticException("Input and output arrays must have the same size.");
-
-		Random random = new Random(seed);
-		Double[] backup;
-
-		for (int i = this.inputData.size() - 1; i > 0; i--)
-		{
-			int index = random.nextInt(i + 1);
-
-			backup = this.inputData.get(index);
-			this.inputData.set(index, this.inputData.get(i));
-			this.inputData.set(i, backup);
-
-			backup = this.outputData.get(index);
-			this.outputData.set(index, this.outputData.get(i));
-			this.outputData.set(i, backup);
-		}
-	}
-
-	@Override
-	public String toString()
-	{
-
-		return "MessageDataSet [hamFilePath=" + hamFilePath + ", spamFilePath=" + spamFilePath + ", hamCount="
-				+ hamCount + ", spamCount=" + spamCount + "]";
-	}
-
+    @Override
+    public String toString()
+    {
+        return "MessageDataSet [hamFilePath=" + hamFilePath + ", spamFilePath=" + spamFilePath + ", hamCount=" + hamCount + ", spamCount=" + spamCount + "]";
+    }
 }

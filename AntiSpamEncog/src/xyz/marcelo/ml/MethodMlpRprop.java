@@ -16,89 +16,84 @@ import xyz.marcelo.math.ActivationTanSig;
 
 /**
  * @author marcelovca90
- * 
+ *
  */
 public class MethodMlpRprop
 {
-	private static final Logger logger = LogManager.getLogger(MethodMlpRprop.class);
+    private static final Logger logger = LogManager.getLogger(MethodMlpRprop.class);
 
-	public static void run(String folder, BasicMLDataSet trainingSet, BasicMLDataSet validationSet,
-			BasicMLDataSet testSet, int seed)
-	{
+    public static void run(String folder, BasicMLDataSet trainingSet, BasicMLDataSet validationSet, BasicMLDataSet testSet, int seed)
+    {
+        int inputCount = testSet.get(0).getInput().size();
+        @SuppressWarnings("unused")
+        int hiddenCount = MethodUtil.getHiddenNeuronsCount(inputCount, trainingSet.size());
+        int outputCount = testSet.get(0).getIdeal().size();
 
-		int inputCount = testSet.get(0).getInput().size();
-		@SuppressWarnings("unused")
-		int hiddenCount = MethodUtil.getHiddenNeuronsCount(inputCount, trainingSet.size());
-		int outputCount = testSet.get(0).getIdeal().size();
+        BasicNetwork network = new BasicNetwork();
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, inputCount));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
+        network.addLayer(new BasicLayer(new ActivationLogSig(), false, outputCount));
+        network.getStructure().finalizeStructure();
+        network.reset(seed);
 
-		BasicNetwork network = new BasicNetwork();
-		network.addLayer(new BasicLayer(new ActivationTanSig(), true, inputCount));
-		network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
-		network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
-		network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
-		network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
-		network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
-		network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
-		network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
-		network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
-		network.addLayer(new BasicLayer(new ActivationTanSig(), true, 20));
-		network.addLayer(new BasicLayer(new ActivationLogSig(), false, outputCount));
-		network.getStructure().finalizeStructure();
-		network.reset(seed);
+        ResilientPropagation resilientPropagation = new ResilientPropagation(network, trainingSet);
+        resilientPropagation.setBatchSize(0);
+        resilientPropagation.setThreadCount(0);
 
-		ResilientPropagation resilientPropagation = new ResilientPropagation(network, trainingSet);
-		resilientPropagation.setBatchSize(0);
-		resilientPropagation.setThreadCount(0);
+        double validationErrorBefore = Double.MAX_VALUE, validationErrorAfter = Double.MAX_VALUE;
 
-		double validationErrorBefore = Double.MAX_VALUE, validationErrorAfter = Double.MAX_VALUE;
+        do
+        {
+            validationErrorBefore = validationErrorAfter;
 
-		do
-		{
+            resilientPropagation.iteration(20);
 
-			validationErrorBefore = validationErrorAfter;
+            validationErrorAfter = network.calculateError(validationSet);
 
-			resilientPropagation.iteration(20);
+            /*
+             * logger.debug(String.format("Iteration #%d\tvError = %.12f", resilientPropagation.getIteration(), validationErrorAfter));
+             */
 
-			validationErrorAfter = network.calculateError(validationSet);
+        } while (validationErrorAfter < validationErrorBefore);
 
-			/*
-			 * logger.debug(String.format("Iteration #%d\tvError = %.12f",
-			 * resilientPropagation.getIteration(), validationErrorAfter));
-			 */
+        resilientPropagation.finishTraining();
 
-		} while (validationErrorAfter < validationErrorBefore);
+        int hamCount = 0, hamCorrect = 0;
+        int spamCount = 0, spamCorrect = 0;
 
-		resilientPropagation.finishTraining();
+        for (MLDataPair pair : testSet)
+        {
+            MLData input = pair.getInput();
+            MLData ideal = pair.getIdeal();
+            MLData output = network.compute(input);
 
-		int hamCount = 0, hamCorrect = 0;
-		int spamCount = 0, spamCorrect = 0;
+            if (MethodUtil.infer(ideal.getData()) == MessageLabel.HAM)
+            {
+                hamCount++;
+                if (MethodUtil.infer(output.getData()) == MessageLabel.HAM)
+                {
+                    hamCorrect++;
+                }
+            }
+            else if (MethodUtil.infer(ideal.getData()) == MessageLabel.SPAM)
+            {
+                spamCount++;
+                if (MethodUtil.infer(output.getData()) == MessageLabel.SPAM)
+                {
+                    spamCorrect++;
+                }
+            }
+        }
 
-		for (MLDataPair pair : testSet)
-		{
-
-			MLData input = pair.getInput();
-			MLData ideal = pair.getIdeal();
-			MLData output = network.compute(input);
-
-			if (MethodUtil.infer(ideal.getData()) == MessageLabel.HAM)
-			{
-				hamCount++;
-				if (MethodUtil.infer(output.getData()) == MessageLabel.HAM)
-				{
-					hamCorrect++;
-				}
-			} else if (MethodUtil.infer(ideal.getData()) == MessageLabel.SPAM)
-			{
-				spamCount++;
-				if (MethodUtil.infer(output.getData()) == MessageLabel.SPAM)
-				{
-					spamCorrect++;
-				}
-			}
-		}
-
-		logger.info(String.format("%d\t%s\tHP: %.2f%% (%d/%d)\tSP: %.2f%% (%d/%d)", seed,
-				folder.replace(Folders.BASE_FOLDER, ""), 100.0 * (double) hamCorrect / (double) hamCount, hamCorrect,
-				hamCount, 100.0 * (double) spamCorrect / (double) spamCount, spamCorrect, spamCount));
-	}
+        logger.info(String.format("%d\t%s\tHP: %.2f%% (%d/%d)\tSP: %.2f%% (%d/%d)", seed, folder.replace(Folders.BASE_FOLDER, ""),
+                100.0 * hamCorrect / hamCount, hamCorrect, hamCount, 100.0 * spamCorrect / spamCount, spamCorrect, spamCount));
+    }
 }
