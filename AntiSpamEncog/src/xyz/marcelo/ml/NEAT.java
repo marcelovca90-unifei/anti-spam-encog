@@ -1,7 +1,5 @@
 package xyz.marcelo.ml;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.encog.ml.CalculateScore;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
@@ -12,22 +10,18 @@ import org.encog.neural.neat.NEATPopulation;
 import org.encog.neural.neat.NEATUtil;
 import org.encog.neural.networks.training.TrainingSetScore;
 
-import xyz.marcelo.common.Enumerates.MessageLabel;
-import xyz.marcelo.common.Folders;
+import xyz.marcelo.common.MessageLabel;
+import xyz.marcelo.helper.DataSetHelper;
+import xyz.marcelo.helper.MethodHelper;
 
-/**
- * @author marcelovca90
- *
- */
-public class MethodNeat
+public class NEAT extends AbstractClassifier
 {
-    private static final Logger logger = LogManager.getLogger(MethodNeat.class);
-
-    public static void run(String folder, BasicMLDataSet trainingSet, BasicMLDataSet validationSet, BasicMLDataSet testSet, int seed)
+    @Override
+    public void train(BasicMLDataSet trainingSet, BasicMLDataSet validationSet)
     {
-        int inputCount = testSet.get(0).getInput().size();
-        int hiddenCount = MethodUtil.getHiddenNeuronsCount(inputCount, trainingSet.size());
-        int outputCount = testSet.get(0).getIdeal().size();
+        int inputCount = trainingSet.get(0).getInput().size();
+        int hiddenCount = MethodHelper.calculateHiddenLayerSize(inputCount, trainingSet.size());
+        int outputCount = trainingSet.get(0).getIdeal().size();
 
         NEATNetwork network = null;
 
@@ -51,16 +45,21 @@ public class MethodNeat
 
             validationErrorAfter = network.calculateError(validationSet);
 
-            /*
-             * logger.debug(String.format("Iteration #%d\tvError = %.12f", train.getIteration(), validationErrorAfter));
-             */
+            // logger.debug(String.format("Iteration #%d\tvError = %.12f", train.getIteration(), validationErrorAfter));
 
         } while (validationErrorAfter < validationErrorBefore);
 
         neatTrainer.finishTraining();
 
+        this.method = network;
+    }
+
+    @Override
+    public void test(BasicMLDataSet testSet)
+    {
         int hamCount = 0, hamCorrect = 0;
         int spamCount = 0, spamCorrect = 0;
+        NEATNetwork network = (NEATNetwork) this.method;
 
         for (MLDataPair pair : testSet)
         {
@@ -68,25 +67,29 @@ public class MethodNeat
             MLData ideal = pair.getIdeal();
             MLData output = network.compute(input);
 
-            if (MethodUtil.infer(ideal.getData()) == MessageLabel.HAM)
+            if (MethodHelper.infer(ideal.getData()) == MessageLabel.HAM)
             {
                 hamCount++;
-                if (MethodUtil.infer(output.getData()) == MessageLabel.HAM)
+                if (MethodHelper.infer(output.getData()) == MessageLabel.HAM)
                 {
                     hamCorrect++;
                 }
             }
-            else if (MethodUtil.infer(ideal.getData()) == MessageLabel.SPAM)
+            else if (MethodHelper.infer(ideal.getData()) == MessageLabel.SPAM)
             {
                 spamCount++;
-                if (MethodUtil.infer(output.getData()) == MessageLabel.SPAM)
+                if (MethodHelper.infer(output.getData()) == MessageLabel.SPAM)
                 {
                     spamCorrect++;
                 }
             }
         }
 
-        logger.info(String.format("%d\t%s\tHP: %.2f%% (%d/%d)\tSP: %.2f%% (%d/%d)", seed, folder.replace(Folders.BASE_FOLDER, ""),
-                100.0 * hamCorrect / hamCount, hamCorrect, hamCount, 100.0 * spamCorrect / spamCount, spamCorrect, spamCount));
+        double hamPrecision = 100.0 * hamCorrect / hamCount;
+        double spamPrecision = 100.0 * spamCorrect / spamCount;
+        double precision = 100.0 * (hamCorrect + spamCorrect) / (hamCount + spamCount);
+
+        logger.info(String.format("%s @ %d\t%s\tHP: %.2f%% (%d/%d)\tSP: %.2f%% (%d/%d)\tGP: %.2f%%", "NEAT", seed,
+                folder.replace(DataSetHelper.BASE_FOLDER, ""), hamPrecision, hamCorrect, hamCount, spamPrecision, spamCorrect, spamCount, precision));
     }
 }

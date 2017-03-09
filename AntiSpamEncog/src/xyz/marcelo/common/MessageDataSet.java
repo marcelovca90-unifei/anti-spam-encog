@@ -1,4 +1,4 @@
-package xyz.marcelo.data;
+package xyz.marcelo.common;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,15 +11,11 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
-import xyz.marcelo.common.EmptyPatterns;
-import xyz.marcelo.common.Enumerates.MessageLabel;
-import xyz.marcelo.ml.MethodUtil;
+import xyz.marcelo.helper.EmptyPatternsHelper;
+import xyz.marcelo.helper.MethodHelper;
 
-/**
- * @author marcelovca90
- *
- */
 public class MessageDataSet
 {
     private List<Double[]> inputData;
@@ -108,8 +104,7 @@ public class MessageDataSet
         }
 
         int instanceAmount = inBuffer.getInt(); // amount of instances
-        int featureAmount = inBuffer.getInt(); // amount of features in each
-        // instance
+        int featureAmount = inBuffer.getInt(); // amount of features in each instance
 
         for (int i = 0; i < instanceAmount; i++)
         {
@@ -168,7 +163,6 @@ public class MessageDataSet
 
     public double[][] getOutputDataAsPrimitiveMatrix()
     {
-
         double[][] matrix = new double[outputData.size()][];
         for (int i = 0; i < matrix.length; i++)
             matrix[i] = ArrayUtils.toPrimitive(outputData.get(i));
@@ -206,7 +200,7 @@ public class MessageDataSet
 
         for (Double[] output : newOutputData)
         {
-            switch (MethodUtil.infer(output))
+            switch (MethodHelper.infer(output))
             {
                 case HAM:
                     newHamCount++;
@@ -231,9 +225,9 @@ public class MessageDataSet
         final Double[] emptyOutputHamPattern = new Double[] { 1.0, 0.0 };
         final Double[] emptyOutputSpamPattern = new Double[] { 0.0, 1.0 };
 
-        int[] emptyPatternsCount = EmptyPatterns.get(folder);
+        Pair<Integer, Integer> emptyPatternsCount = EmptyPatternsHelper.getEmptyPatternCountsByFolder(folder);
 
-        int emptyHamsCount = emptyPatternsCount[0];
+        int emptyHamsCount = emptyPatternsCount.getLeft();
         for (int i = 0; i < emptyHamsCount; i++)
         {
             this.inputData.add(emptyInputPattern.clone());
@@ -241,7 +235,7 @@ public class MessageDataSet
         }
         this.hamCount += emptyHamsCount;
 
-        int emptySpamsCount = emptyPatternsCount[1];
+        int emptySpamsCount = emptyPatternsCount.getRight();
         for (int i = 0; i < emptySpamsCount; i++)
         {
             this.inputData.add(emptyInputPattern.clone());

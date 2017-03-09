@@ -2,42 +2,32 @@ package xyz.marcelo.main;
 
 import java.io.File;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.encog.Encog;
 import org.encog.ml.data.basic.BasicMLDataSet;
 
-import xyz.marcelo.common.Enumerates.Method;
-import xyz.marcelo.common.Folders;
-import xyz.marcelo.common.Primes;
-import xyz.marcelo.data.MessageDataSet;
-import xyz.marcelo.ml.MethodMlpBprop;
-import xyz.marcelo.ml.MethodMlpRprop;
-import xyz.marcelo.ml.MethodNeat;
-import xyz.marcelo.ml.MethodRbfQprop;
-import xyz.marcelo.ml.MethodSvm;
+import xyz.marcelo.common.MessageDataSet;
+import xyz.marcelo.helper.DataSetHelper;
+import xyz.marcelo.helper.PrimeHelper;
+import xyz.marcelo.ml.AbstractClassifier;
+import xyz.marcelo.ml.MLP_BPROP;
+import xyz.marcelo.ml.MLP_RPROP;
+import xyz.marcelo.ml.NEAT;
+import xyz.marcelo.ml.RBF_QPROP;
+import xyz.marcelo.ml.SVM_RBF;
 
-/**
- * @author marcelovca90
- *
- */
 public class Main
 {
-    @SuppressWarnings("unused")
-    private static final Logger logger = LogManager.getLogger(Main.class);
-
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
-        final int seed = Primes.getMiddlePrime();
+        Class<?>[] classes = new Class[] { MLP_BPROP.class, MLP_RPROP.class, NEAT.class, RBF_QPROP.class, SVM_RBF.class };
 
-        final Method[] methods = new Method[] { Method.MLP_RPROP, Method.MLP_RPROP, Method.NEAT, Method.RBF_QPROP, Method.SVM };
-
-        for (Method method : methods)
+        for (Class<?> clazz : classes)
         {
-            for (String folder : Folders.FOLDERS_MI)
+            for (String folder : DataSetHelper.getFolders())
             {
                 File hamFile = new File(folder + "/ham");
                 File spamFile = new File(folder + "/spam");
+                int seed = PrimeHelper.getMiddlePrime();
 
                 MessageDataSet dataSet = new MessageDataSet(hamFile, spamFile);
                 MessageDataSet dataSubset = null;
@@ -54,28 +44,14 @@ public class Main
                 dataSubset = dataSet.getSubset(60, 100);
                 BasicMLDataSet testSet = new BasicMLDataSet(dataSubset.getInputDataAsPrimitiveMatrix(), dataSubset.getOutputDataAsPrimitiveMatrix());
 
-                switch (method)
-                {
-                    case MLP_BPROP:
-                        MethodMlpBprop.run(folder, trainingSet, validationSet, testSet, seed);
-                        break;
-                    case MLP_RPROP:
-                        MethodMlpRprop.run(folder, trainingSet, validationSet, testSet, seed);
-                        break;
-                    case NEAT:
-                        MethodNeat.run(folder, trainingSet, validationSet, testSet, seed);
-                        break;
-                    case RBF_QPROP:
-                        MethodRbfQprop.run(folder, trainingSet, validationSet, testSet, seed);
-                        break;
-                    case SVM:
-                        MethodSvm.run(folder, trainingSet, validationSet, testSet, seed);
-                        break;
-                }
+                AbstractClassifier classifier = (AbstractClassifier) clazz.newInstance();
+
+                classifier.initialize(folder, seed);
+                classifier.train(trainingSet, validationSet);
+                classifier.test(testSet);
             }
         }
 
         Encog.getInstance().shutdown();
-        Runtime.getRuntime().gc();
     }
 }

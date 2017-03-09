@@ -2,10 +2,6 @@ package xyz.marcelo.math;
 
 import org.encog.engine.network.activation.ActivationFunction;
 
-/**
- * @author marcelovca90
- *
- */
 public class ActivationTanSig implements ActivationFunction
 {
     private static final long serialVersionUID = 1L;

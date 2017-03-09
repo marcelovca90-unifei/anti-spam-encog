@@ -1,7 +1,5 @@
 package xyz.marcelo.ml;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLDataSet;
@@ -10,20 +8,16 @@ import org.encog.ml.svm.SVM;
 import org.encog.ml.svm.SVMType;
 import org.encog.ml.svm.training.SVMTrain;
 
-import xyz.marcelo.common.Enumerates.MessageLabel;
-import xyz.marcelo.common.Folders;
+import xyz.marcelo.common.MessageLabel;
+import xyz.marcelo.helper.DataSetHelper;
+import xyz.marcelo.helper.MethodHelper;
 
-/**
- * @author marcelovca90
- *
- */
-public class MethodSvm
+public class SVM_RBF extends AbstractClassifier
 {
-    private static final Logger logger = LogManager.getLogger(MethodSvm.class);
-
-    public static void run(String folder, BasicMLDataSet trainingSet, BasicMLDataSet validationSet, BasicMLDataSet testSet, int seed)
+    @Override
+    public void train(BasicMLDataSet trainingSet, BasicMLDataSet validationSet)
     {
-        int inputCount = testSet.get(0).getInput().size();
+        int inputCount = trainingSet.get(0).getInput().size();
 
         SVM svm = new SVM(inputCount, SVMType.SupportVectorClassification, KernelType.RadialBasisFunction);
 
@@ -36,14 +30,14 @@ public class MethodSvm
             svmTrainTemp.setGamma(Math.random());
             svmTrainTemp.setFold((int) Math.log10(inputCount) + 1);
             svmTrainTemp.iteration();
+
             if (svmTrainTemp.getError() < bestError)
             {
                 bestError = svmTrainTemp.getError();
                 bestC = svmTrainTemp.getC();
                 bestGamma = svmTrainTemp.getGamma();
-                /*
-                 * logger.debug(String.format( "Best error so far = %f (i = %d, C=%f, GAMMA=%f)", bestError, i, bestC, bestGamma));
-                 */
+
+                // logger.debug(String.format( "Best error so far = %f (i = %d, C=%f, GAMMA=%f)", bestError, i, bestC, bestGamma));
             }
         }
 
@@ -53,8 +47,17 @@ public class MethodSvm
 
         svmTrain.iteration();
 
+        svmTrain.finishTraining();
+
+        this.method = svm;
+    }
+
+    @Override
+    public void test(BasicMLDataSet testSet)
+    {
         int hamCount = 0, hamCorrect = 0;
         int spamCount = 0, spamCorrect = 0;
+        SVM svm = (SVM) this.method;
 
         for (MLDataPair pair : testSet)
         {
@@ -62,7 +65,7 @@ public class MethodSvm
             MLData ideal = pair.getIdeal();
             MLData output = svm.compute(input);
 
-            if (MethodUtil.infer(ideal.getData()) == MessageLabel.HAM)
+            if (MethodHelper.infer(ideal.getData()) == MessageLabel.HAM)
             {
                 hamCount++;
                 if (Math.abs(output.getData(0) - 0.0) < 1e-6)
@@ -70,7 +73,7 @@ public class MethodSvm
                     hamCorrect++;
                 }
             }
-            else if (MethodUtil.infer(ideal.getData()) == MessageLabel.SPAM)
+            else if (MethodHelper.infer(ideal.getData()) == MessageLabel.SPAM)
             {
                 spamCount++;
                 if (Math.abs(output.getData(0) - 1.0) < 1e-6)
@@ -80,7 +83,11 @@ public class MethodSvm
             }
         }
 
-        logger.info(String.format("%d\t%s\tHP: %.2f%% (%d/%d)\tSP: %.2f%% (%d/%d)", seed, folder.replace(Folders.BASE_FOLDER, ""),
-                100.0 * hamCorrect / hamCount, hamCorrect, hamCount, 100.0 * spamCorrect / spamCount, spamCorrect, spamCount));
+        double hamPrecision = 100.0 * hamCorrect / hamCount;
+        double spamPrecision = 100.0 * spamCorrect / spamCount;
+        double precision = 100.0 * (hamCorrect + spamCorrect) / (hamCount + spamCount);
+
+        logger.info(String.format("%s @ %d\t%s\tHP: %.2f%% (%d/%d)\tSP: %.2f%% (%d/%d)\tGP: %.2f%%", "SVC-RBF", seed,
+                folder.replace(DataSetHelper.BASE_FOLDER, ""), hamPrecision, hamCorrect, hamCount, spamPrecision, spamCorrect, spamCount, precision));
     }
 }
