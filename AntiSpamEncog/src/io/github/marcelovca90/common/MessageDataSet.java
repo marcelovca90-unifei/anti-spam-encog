@@ -1,4 +1,4 @@
-package xyz.marcelo.common;
+package io.github.marcelovca90.common;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,8 +13,8 @@ import java.util.Random;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
-import xyz.marcelo.helper.EmptyPatternsHelper;
-import xyz.marcelo.helper.MethodHelper;
+import io.github.marcelovca90.helper.EmptyPatternsHelper;
+import io.github.marcelovca90.helper.MethodHelper;
 
 public class MessageDataSet
 {

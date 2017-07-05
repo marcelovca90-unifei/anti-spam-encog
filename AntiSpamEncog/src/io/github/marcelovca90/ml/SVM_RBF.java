@@ -1,4 +1,4 @@
-package xyz.marcelo.ml;
+package io.github.marcelovca90.ml;
 
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
@@ -8,9 +8,9 @@ import org.encog.ml.svm.SVM;
 import org.encog.ml.svm.SVMType;
 import org.encog.ml.svm.training.SVMTrain;
 
-import xyz.marcelo.common.MessageLabel;
-import xyz.marcelo.helper.DataSetHelper;
-import xyz.marcelo.helper.MethodHelper;
+import io.github.marcelovca90.common.MessageLabel;
+import io.github.marcelovca90.helper.DataSetHelper;
+import io.github.marcelovca90.helper.MethodHelper;
 
 public class SVM_RBF extends AbstractClassifier
 {

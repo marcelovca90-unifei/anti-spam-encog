@@ -1,4 +1,4 @@
-package xyz.marcelo.ml;
+package io.github.marcelovca90.ml;
 
 import org.encog.ml.CalculateScore;
 import org.encog.ml.data.MLData;
@@ -10,9 +10,9 @@ import org.encog.neural.neat.NEATPopulation;
 import org.encog.neural.neat.NEATUtil;
 import org.encog.neural.networks.training.TrainingSetScore;
 
-import xyz.marcelo.common.MessageLabel;
-import xyz.marcelo.helper.DataSetHelper;
-import xyz.marcelo.helper.MethodHelper;
+import io.github.marcelovca90.common.MessageLabel;
+import io.github.marcelovca90.helper.DataSetHelper;
+import io.github.marcelovca90.helper.MethodHelper;
 
 public class NEAT extends AbstractClassifier
 {

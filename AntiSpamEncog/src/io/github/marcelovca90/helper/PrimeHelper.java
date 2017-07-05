@@ -1,4 +1,4 @@
-package xyz.marcelo.helper;
+package io.github.marcelovca90.helper;
 
 public class PrimeHelper
 {

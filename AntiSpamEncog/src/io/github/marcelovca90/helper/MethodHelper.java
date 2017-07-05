@@ -1,11 +1,11 @@
 /**
  *
  */
-package xyz.marcelo.helper;
+package io.github.marcelovca90.helper;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import xyz.marcelo.common.MessageLabel;
+import io.github.marcelovca90.common.MessageLabel;
 
 public class MethodHelper
 {

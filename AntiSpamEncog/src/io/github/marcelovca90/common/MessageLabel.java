@@ -1,4 +1,4 @@
-package xyz.marcelo.common;
+package io.github.marcelovca90.common;
 
 public enum MessageLabel
 {

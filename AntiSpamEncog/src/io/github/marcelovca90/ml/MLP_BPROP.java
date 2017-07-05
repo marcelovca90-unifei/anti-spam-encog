@@ -1,4 +1,4 @@
-package xyz.marcelo.ml;
+package io.github.marcelovca90.ml;
 
 import java.util.Arrays;
 
@@ -9,11 +9,11 @@ import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
 
-import xyz.marcelo.common.MessageLabel;
-import xyz.marcelo.helper.DataSetHelper;
-import xyz.marcelo.helper.MethodHelper;
-import xyz.marcelo.math.ActivationLogSig;
-import xyz.marcelo.math.ActivationTanSig;
+import io.github.marcelovca90.common.MessageLabel;
+import io.github.marcelovca90.helper.DataSetHelper;
+import io.github.marcelovca90.helper.MethodHelper;
+import io.github.marcelovca90.math.ActivationLogSig;
+import io.github.marcelovca90.math.ActivationTanSig;
 
 public class MLP_BPROP extends AbstractClassifier
 {

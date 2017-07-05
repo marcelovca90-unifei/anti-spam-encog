@@ -1,19 +1,21 @@
-package xyz.marcelo.ml;
+package io.github.marcelovca90.ml;
 
 import java.util.Arrays;
 
-import org.encog.mathutil.rbf.RBFEnum;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLDataSet;
-import org.encog.neural.networks.training.propagation.quick.QuickPropagation;
-import org.encog.neural.rbf.RBFNetwork;
+import org.encog.neural.networks.BasicNetwork;
+import org.encog.neural.networks.layers.BasicLayer;
+import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
 
-import xyz.marcelo.common.MessageLabel;
-import xyz.marcelo.helper.DataSetHelper;
-import xyz.marcelo.helper.MethodHelper;
+import io.github.marcelovca90.common.MessageLabel;
+import io.github.marcelovca90.helper.DataSetHelper;
+import io.github.marcelovca90.helper.MethodHelper;
+import io.github.marcelovca90.math.ActivationLogSig;
+import io.github.marcelovca90.math.ActivationTanSig;
 
-public class RBF_QPROP extends AbstractClassifier
+public class MLP_RPROP extends AbstractClassifier
 {
     @Override
     public void train(BasicMLDataSet trainingSet, BasicMLDataSet validationSet)
@@ -22,12 +24,17 @@ public class RBF_QPROP extends AbstractClassifier
         int hiddenCount = MethodHelper.calculateHiddenLayerSize(inputCount, trainingSet.size());
         int outputCount = trainingSet.get(0).getIdeal().size();
 
-        RBFNetwork network = new RBFNetwork(inputCount, hiddenCount, outputCount, RBFEnum.Gaussian);
-        network.reset();
+        BasicNetwork network = new BasicNetwork();
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, inputCount));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, hiddenCount));
+        network.addLayer(new BasicLayer(new ActivationTanSig(), true, hiddenCount));
+        network.addLayer(new BasicLayer(new ActivationLogSig(), false, outputCount));
+        network.getStructure().finalizeStructure();
+        network.reset(seed);
 
-        QuickPropagation quickPropagation = new QuickPropagation(network, trainingSet);
-        quickPropagation.setBatchSize(0);
-        quickPropagation.setThreadCount(0);
+        ResilientPropagation resilientPropagation = new ResilientPropagation(network, trainingSet);
+        resilientPropagation.setBatchSize(0);
+        resilientPropagation.setThreadCount(0);
 
         double validationErrorBefore = Double.MAX_VALUE, validationErrorAfter = Double.MAX_VALUE;
 
@@ -35,15 +42,15 @@ public class RBF_QPROP extends AbstractClassifier
         {
             validationErrorBefore = validationErrorAfter;
 
-            quickPropagation.iteration(20);
+            resilientPropagation.iteration(20);
 
             validationErrorAfter = network.calculateError(validationSet);
 
-            // logger.debug(String.format("Iteration #%d\tvError = %.12f", quickPropagation.getIteration(), validationErrorAfter));
+            // logger.debug(String.format("Iteration #%d\tvError = %.12f", resilientPropagation.getIteration(), validationErrorAfter));
 
         } while (validationErrorAfter < validationErrorBefore);
 
-        quickPropagation.finishTraining();
+        resilientPropagation.finishTraining();
 
         this.method = network;
     }
@@ -53,7 +60,7 @@ public class RBF_QPROP extends AbstractClassifier
     {
         int hamCount = 0, hamCorrect = 0;
         int spamCount = 0, spamCorrect = 0;
-        RBFNetwork network = ((RBFNetwork) this.method);
+        BasicNetwork network = ((BasicNetwork) this.method);
 
         for (MLDataPair pair : testSet)
         {

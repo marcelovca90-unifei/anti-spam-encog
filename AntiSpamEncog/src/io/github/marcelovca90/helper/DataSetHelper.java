@@ -1,7 +1,7 @@
 /**
  *
  */
-package xyz.marcelo.helper;
+package io.github.marcelovca90.helper;
 
 import java.io.File;
 import java.io.IOException;

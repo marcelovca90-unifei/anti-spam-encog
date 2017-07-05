@@ -1,19 +1,19 @@
-package xyz.marcelo.main;
+package io.github.marcelovca90.main;
 
 import java.io.File;
 
 import org.encog.Encog;
 import org.encog.ml.data.basic.BasicMLDataSet;
 
-import xyz.marcelo.common.MessageDataSet;
-import xyz.marcelo.helper.DataSetHelper;
-import xyz.marcelo.helper.PrimeHelper;
-import xyz.marcelo.ml.AbstractClassifier;
-import xyz.marcelo.ml.MLP_BPROP;
-import xyz.marcelo.ml.MLP_RPROP;
-import xyz.marcelo.ml.NEAT;
-import xyz.marcelo.ml.RBF_QPROP;
-import xyz.marcelo.ml.SVM_RBF;
+import io.github.marcelovca90.common.MessageDataSet;
+import io.github.marcelovca90.helper.DataSetHelper;
+import io.github.marcelovca90.helper.PrimeHelper;
+import io.github.marcelovca90.ml.AbstractClassifier;
+import io.github.marcelovca90.ml.MLP_BPROP;
+import io.github.marcelovca90.ml.MLP_RPROP;
+import io.github.marcelovca90.ml.NEAT;
+import io.github.marcelovca90.ml.RBF_QPROP;
+import io.github.marcelovca90.ml.SVM_RBF;
 
 public class Main
 {
